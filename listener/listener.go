@@ -20,7 +20,13 @@ import (
 
 const paramContractVersion = "contractVersion"
 
-func RegisterListenerComponent(log logr.Logger, mgr ctrl.Manager, builder *builder.Builder, addr string, eventhandler handler.EventHandler) *builder.Builder {
+func RegisterListenerComponent(
+	log logr.Logger,
+	mgr ctrl.Manager,
+	builder *builder.Builder,
+	addr string,
+	eventhandler handler.EventHandler,
+) *builder.Builder {
 	skrEventsListener := &SKREventsListener{
 		Addr:   addr,
 		Logger: log,
