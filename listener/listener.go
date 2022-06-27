@@ -18,6 +18,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
+const paramContractVersion = "contractVersion"
+
 func RegisterListenerComponent(log logr.Logger, mgr ctrl.Manager, builder *builder.Builder, addr string, eventhandler handler.EventHandler) *builder.Builder {
 	skrEventsListener := &SKREventsListener{
 		Addr:   addr,
@@ -37,25 +39,11 @@ func RegisterListenerComponent(log logr.Logger, mgr ctrl.Manager, builder *build
 	return newBuilder
 }
 
-type UnmarshalError struct {
-	Message       string
-	httpErrorCode int
-}
-
-type WatcherEvent struct {
-	SkrClusterID string `json:"skrClusterID"`
-	Component    string `json:"body"`
-	Namespace    string `json:"namespace"`
-	Name         string `json:"name"`
-}
-
 type SKREventsListener struct {
 	Addr           string
 	Logger         logr.Logger
 	receivedEvents chan event.GenericEvent
 }
-
-const paramContractVersion = "contractVersion"
 
 func (l *SKREventsListener) ReceivedEvents() chan event.GenericEvent {
 	if l.receivedEvents == nil {
@@ -108,6 +96,18 @@ func (l *SKREventsListener) handleSKREvent() http.HandlerFunc {
 		l.Logger.Info("dispatched event object into channel", "resource", genericEvtObject.GetName())
 		w.WriteHeader(http.StatusOK)
 	}
+}
+
+type WatcherEvent struct {
+	SkrClusterID string `json:"skrClusterID"`
+	Component    string `json:"body"`
+	Namespace    string `json:"namespace"`
+	Name         string `json:"name"`
+}
+
+type UnmarshalError struct {
+	Message       string
+	httpErrorCode int
 }
 
 func unmarshalSKREvent(r *http.Request) (client.Object, *UnmarshalError) {
