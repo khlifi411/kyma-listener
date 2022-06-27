@@ -1,4 +1,4 @@
-module github.com/khlifi411/kyma-listener
+module github.com/khlifi411/kyma-listener/listener
 
 go 1.18
 
