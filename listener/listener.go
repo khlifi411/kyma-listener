@@ -18,7 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-const paramContractVersion = "contractVersion"
+const paramContractVersion = "1"
 
 func RegisterListenerComponent(
 	log logr.Logger,
@@ -26,10 +26,12 @@ func RegisterListenerComponent(
 	builder *builder.Builder,
 	addr string,
 	eventhandler handler.EventHandler,
+	componentName string,
 ) *builder.Builder {
 	skrEventsListener := &SKREventsListener{
-		Addr:   addr,
-		Logger: log,
+		Addr:          addr,
+		Logger:        log,
+		ComponentName: componentName,
 	}
 	eventsSource := skrEventsListener.ReceivedEvents()
 	newBuilder := builder.Watches(
@@ -48,6 +50,7 @@ func RegisterListenerComponent(
 type SKREventsListener struct {
 	Addr           string
 	Logger         logr.Logger
+	ComponentName  string
 	receivedEvents chan event.GenericEvent
 }
 
@@ -64,7 +67,7 @@ func (l *SKREventsListener) Start(ctx context.Context) error {
 	apiRouter := mainRouter.PathPrefix("/").Subrouter()
 
 	apiRouter.HandleFunc(
-		fmt.Sprintf("/v{%s}/skr/event", paramContractVersion),
+		fmt.Sprintf("/v%s/%s/event", paramContractVersion, l.ComponentName),
 		l.handleSKREvent(),
 	).Methods(http.MethodPost)
 
