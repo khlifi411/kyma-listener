@@ -18,7 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-const paramContractVersion = "1"
+const paramContractVersion = "version"
 
 func RegisterListenerComponent(
 	log logr.Logger,
@@ -67,7 +67,7 @@ func (l *SKREventsListener) Start(ctx context.Context) error {
 	apiRouter := mainRouter.PathPrefix("/").Subrouter()
 
 	apiRouter.HandleFunc(
-		fmt.Sprintf("/v%s/%s/event", paramContractVersion, l.ComponentName),
+		fmt.Sprintf("/v{%s}/%s/event", paramContractVersion, l.ComponentName),
 		l.handleSKREvent(),
 	).Methods(http.MethodPost)
 
