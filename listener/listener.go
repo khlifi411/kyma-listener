@@ -73,15 +73,14 @@ func (l *SKREventsListener) Start(ctx context.Context) error {
 
 	//start web server
 	server := &http.Server{Addr: l.Addr, Handler: mainRouter}
-	go func() {
-		l.Logger.Info("SKR events listener is starting up...")
-		err := server.ListenAndServe()
-		if err != nil && err != http.ErrServerClosed {
-			l.Logger.Error(err, "Webserver startup failed")
-		}
-		l.Logger.WithValues("Address:", server.Addr).
-			Info("SKR events listener started up successfully")
-	}()
+	l.Logger.Info("SKR events listener is starting up...")
+	err := server.ListenAndServe()
+	if err != nil && err != http.ErrServerClosed {
+		l.Logger.Error(err, "Webserver startup failed")
+		return err
+	}
+	l.Logger.WithValues("Address:", server.Addr).
+		Info("SKR events listener started up successfully")
 	<-ctx.Done()
 	l.Logger.Info("SKR events listener is shutting down: context got closed")
 	return server.Shutdown(ctx)
