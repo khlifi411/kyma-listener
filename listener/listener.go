@@ -106,9 +106,9 @@ func (l *SKREventsListener) handleSKREvent() http.HandlerFunc {
 }
 
 type WatcherEvent struct {
-	SkrClusterID string `json:"skrClusterID"`
-	Namespace    string `json:"namespace"`
-	Name         string `json:"name"`
+	KymaCr    string `json:"kyma"`
+	Namespace string `json:"namespace"`
+	Name      string `json:"name"`
 }
 
 type UnmarshalError struct {
