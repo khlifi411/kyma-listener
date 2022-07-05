@@ -8,60 +8,48 @@ import (
 	"net/http"
 
 	"github.com/go-logr/logr"
+	"github.com/go-logr/zapr"
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 const paramContractVersion = "version"
 
-func RegisterListenerComponent(
-	log logr.Logger,
-	mgr ctrl.Manager,
-	builder *builder.Builder,
-	addr string,
-	eventhandler handler.EventHandler,
-	componentName string,
-) *builder.Builder {
+func StartListenerComponent(ctx context.Context, addr string, componentName string) *source.Channel {
+
+	var log logr.Logger
+	zapLog, err := zap.NewDevelopment()
+	if err != nil {
+		panic(fmt.Sprintf("failed to initialize zap logger: %v?", err))
+	}
+	log = zapr.NewLogger(zapLog)
+
 	skrEventsListener := &SKREventsListener{
-		Addr:          addr,
-		Logger:        log,
-		ComponentName: componentName,
+		Addr:           addr,
+		Logger:         log,
+		ReceivedEvents: make(chan event.GenericEvent),
+		ComponentName:  componentName,
 	}
-	eventsSource := skrEventsListener.ReceivedEvents()
-	newBuilder := builder.Watches(
-		&source.Channel{Source: eventsSource},
-		eventhandler,
-	)
-	// Adding events listener as a runnable of the manager
-	if err := mgr.Add(skrEventsListener); err != nil {
-		log.Error(err, "Failed to start SKR listener...")
-		return builder
-	}
-	log.Info("initialized listener for generic events from the SKR watcher")
-	return newBuilder
+	go func() {
+		if err := skrEventsListener.start(ctx); err != nil {
+			log.Error(err, "Failed to start SKR listener...")
+		}
+	}()
+	return &source.Channel{Source: skrEventsListener.ReceivedEvents}
 }
 
 type SKREventsListener struct {
 	Addr           string
 	Logger         logr.Logger
 	ComponentName  string
-	receivedEvents chan event.GenericEvent
+	ReceivedEvents chan event.GenericEvent
 }
 
-func (l *SKREventsListener) ReceivedEvents() chan event.GenericEvent {
-	if l.receivedEvents == nil {
-		l.receivedEvents = make(chan event.GenericEvent)
-	}
-	return l.receivedEvents
-}
-
-func (l *SKREventsListener) Start(ctx context.Context) error {
+func (l *SKREventsListener) start(ctx context.Context) error {
 	//routing
 	mainRouter := mux.NewRouter()
 	apiRouter := mainRouter.PathPrefix("/").Subrouter()
@@ -79,8 +67,6 @@ func (l *SKREventsListener) Start(ctx context.Context) error {
 		if err != nil && err != http.ErrServerClosed {
 			l.Logger.Error(err, "Webserver startup failed")
 		}
-		l.Logger.WithValues("Address:", server.Addr).
-			Info("SKR events listener started up successfully")
 	}()
 	<-ctx.Done()
 	l.Logger.Info("SKR events listener is shutting down: context got closed")
@@ -101,7 +87,7 @@ func (l *SKREventsListener) handleSKREvent() http.HandlerFunc {
 		}
 
 		//add event to the channel
-		l.receivedEvents <- event.GenericEvent{Object: genericEvtObject}
+		l.ReceivedEvents <- event.GenericEvent{Object: genericEvtObject}
 		l.Logger.Info("dispatched event object into channel", "resource", genericEvtObject.GetName())
 		w.WriteHeader(http.StatusOK)
 	}

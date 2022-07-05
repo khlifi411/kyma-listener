@@ -4,9 +4,13 @@ go 1.18
 
 require (
 	github.com/go-logr/logr v1.2.3
+	github.com/go-logr/zapr v1.2.0
+	go.uber.org/zap v1.19.1
 	k8s.io/apimachinery v0.24.2
 	sigs.k8s.io/controller-runtime v0.12.2
 )
+
+require go.uber.org/multierr v1.6.0 // indirect
 
 require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
