@@ -1,39 +1,29 @@
-> **NOTE:** It is a general template that can be used for a project README.md, example README.md, or any other README.md type in all Kyma repositories in the Kyma organization. Not all the sections are mandatory. Use only those that suit your use case but keep the proposed section order.
 
-# {Project Title} (mandatory)
+# Kyma Listener
 
-> Modify the title and insert the name of your project. Use Heading 1 (H1).
+Listener component that listens to events sent by the Kyma [watcher](https://github.com/kyma-project/kyma-watcher) component.
 
-## Overview (mandatory)
+## Overview
 
-> Provide a description of the project's functionality.
->
-> If it is an example README.md, describe what the example illustrates.
+The listener module is typically used with operators built using kube-builder but its use is not resticted only to that.
+### Use
 
-## Prerequisites
+1. For operators built using the kube-builder framework, you might leverage your `SetupWithManager()` method to initialize the listener by calling `RegisterListenerComponent()`.
 
-> List the requirements to run the project or example.
+2. You might also setup your controller to watch for changes sent through the `source.Channel{}` returned by the listener component and react to them calling the `(blder *Builder) Watches()` method and providing your `handler.EventHandler` implementation.
 
-## Installation
+3. The last step is to start the listener, which is accomplished by adding the listener as a runnable to your controller-manager. This is done by calling `mgr.Add()` and passing the listener returned by `RegisterListenerComponent()`.
 
-> Explain the steps to install your project. Create an ordered list for each installation task.
->
-> If it is an example README.md, describe how to build, run locally, and deploy the example. Format the example as code blocks and specify the language, highlighting where possible. Explain how you can validate that the example ran successfully. For example, define the expected output or commands to run which check a successful deployment.
->
-> Add subsections (H3) for better readability.
 
-## Usage
+### Sample code
 
-> Explain how to use the project. You can create multiple subsections (H3). Include the instructions or provide links to the related documentation.
+```golang
+    //register listener component
+	runnableListener, eventChannel := listener.RegisterListenerComponent(listenerAddr, strings.ToLower(v1alpha1.KymaKind))
 
-## Development
-
-> Add instructions on how to develop the project or example. It must be clear what to do and, for example, how to trigger the tests so that other contributors know how to make their pull requests acceptable. Include the instructions or provide links to related documentation.
-
-## Troubleshooting
-
-> List potential issues and provide tips on how to avoid or solve them. To structure the content, use the following sections:
->
-> - **Symptom**
-> - **Cause**
-> - **Remedy**
+	//watch event channel
+	controllerBuilder.Watches(eventChannel, &handler.EnqueueRequestForObject{})
+	
+    //start listener as a manager runnable
+	mgr.Add(runnableListener)
+```
