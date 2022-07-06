@@ -1,13 +1,15 @@
 
 # Kyma Listener
 
-Listener component that listens to events sent by the Kyma [watcher](https://github.com/kyma-project/kyma-watcher) component
+Listener component that listens to events sent by the Kyma [watcher](https://github.com/kyma-project/kyma-watcher) component.
 
 ## Overview
 
-The listener module is typically used with operators built using kube-builder but its use is not resticted to that case only.
+The listener module is typically used with operators built using kube-builder but its use is not resticted only to that.
 ### Use
 
-1. For operators built using the kube-builder framework, you might leverage your `SetupWithManager()` method to initialize the listener by calling `StartListenerComponent()`.
+1. For operators built using the kube-builder framework, you might leverage your `SetupWithManager()` method to initialize the listener by calling `RegisterListenerComponent()`.
 
-2. You might also setup your controller to watch for changes sent through the `source.Channel{}` returned by the listener component and react to them calling the `(blder *Builder) Watches()` and providing your `handler.EventHandler` implementation.
+2. You might also setup your controller to watch for changes sent through the `source.Channel{}` returned by the listener component and react to them calling the `(blder *Builder) Watches()` method and providing your `handler.EventHandler` implementation.
+
+3. The last step is to start the listener, which is accomplished by adding the listener as a runnable to your controller-manager. This is done by calling `mgr.Add()` and passing the listener returned by `RegisterListenerComponent()`.
